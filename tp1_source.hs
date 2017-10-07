@@ -202,7 +202,17 @@ s2l :: Sexp -> Lexp
 s2l (Snum n) = Lnum n
 s2l (Ssym s) = Lvar s
 -- ¡¡ COMPLETER !!
-s2l se = error ("Malformed Sexp: " ++ (showSexp se))
+s2l (Scons Snil e) = -- end of list case
+    let e' = s2l e
+    in case (e') of
+        (_) -> Lapp e' [] 
+s2l (Scons e1 e2) = 
+    let e1' = s2l e1
+        e2' = s2l e2
+    in case (e1', e2') of
+        (Lapp f arg, _) -> Lapp f (arg ++ [e2']) -- only function call for now 
+
+s2l se = error ("Malformed Sexp: " ++ (show se))
 
 ---------------------------------------------------------------------------
 -- Représentation du contexte d'exécution                                --
@@ -256,16 +266,21 @@ env0 = let false = Vcons "false" []
 
 eval :: Env -> Env -> Lexp -> Value
 eval _senv _denv (Lnum n) = Vnum n
-eval _senv _denv (Lvar x) = envlookup x _senv
 -- ¡¡ COMPLETER !!
+eval _senv _denv (Lvar x) = envlookup x _senv -- handle dynamic lookup too / look into both env 
+eval _senv _denv (Lapp f args) = 
+    let f' = eval _senv _denv f
+        g = eval _senv _denv
+        args' = map g args
+	in case (f', args') of
+	    (Vfun a f, _) -> f _senv args'
 eval _ _ e = error ("Can't eval: " ++ show e)
 
 
--- Fonctions auxilisaires
+-- Fonctions auxiliaires
 
 -- Environnement lookup
 envlookup :: Var -> Env -> Value
--- how to handle unfound var?? envlookup _ [] = NIL??
 envlookup x ((x',v'):rest) = if x == x' then v' else envlookup x rest
 
 ---------------------------------------------------------------------------
@@ -287,4 +302,4 @@ run filename =
             in map evalSexp (sexps s))
 
 -- To remove
-main = run "bittest.psil" -- print "hello world"
+main = run "temptest.psil"
