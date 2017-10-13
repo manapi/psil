@@ -202,17 +202,40 @@ s2l :: Sexp -> Lexp
 s2l (Snum n) = Lnum n
 s2l (Ssym s) = Lvar s
 -- ¡¡ COMPLETER !!
-s2l (Scons Snil e) = -- end of list case
-    let e' = s2l e
-    in case (e') of
-        (_) -> Lapp e' [] 
+s2l (Scons Snil e) = s2l e
 s2l (Scons e1 e2) = 
     let e1' = s2l e1
         e2' = s2l e2
     in case (e1', e2') of
-        (Lapp f arg, _) -> Lapp f (arg ++ [e2']) -- only function call for now 
-
-s2l se = error ("Malformed Sexp: " ++ (show se))
+	
+	 (Lcons tag tab, _ ) -> Lcons tag (tab++[e2']) 
+	 (Lapp (Lcase exp cas) (a:as), _ ) ->  Lcase exp [(Just("true",[]),a),(Just("false",[]),e2')]
+	 
+	 (Lapp e arg, Lnum n) -> Lapp e (arg++[e2'])
+	 
+	 
+	 ( _ , Lnum n) -> Lapp e1' [e2']
+	 
+	 (Lvar "if", _ ) -> Lcase e2' []
+	 (Lvar "case", _ ) -> Lcase e2' []
+	 
+	 (Lvar "cons", Lvar "cons") -> Lcons "cons" []
+	 (Lvar "cons", Lvar "nil") -> Lcons "nil" []
+	 (Lvar "cons", Lvar v ) -> Llambda ["cons", v] (Lvar "//CASE//")
+	
+	 (Lvar s, Lapp e arg) -> Lapp e1' [e2']
+	 (Lapp e arg, Lvar n) -> Lapp e (arg++[e2'])
+	 
+	 (Lvar "lambda", Lvar v) -> Llambda [v] (Lvar " ")
+	 (Llambda var1 (Lvar " "), Llambda var2 exp2) -> Llambda (var1++var2) exp2
+	 (Llambda var (Lvar "//CASE//"), Lvar v) -> Llambda (var++[v]) (Lvar "//CASE")
+	 (Llambda (x:xs) (Lvar "//CASE//"), Lapp _ _ ) -> Lcase (Lvar " ") [(Just(x, xs), e2')]
+	 (Llambda var (Lvar " "), _ ) -> Llambda var e2' 
+	 
+	 (Lcase e cas, Lapp (Lvar v) (a:as)) -> Lcase e (cas++[(Just (v,[]),a)])
+	 (Lcase e cas1, Lcase (Lvar " ") cas2) -> Lcase e (cas1++cas2)
+	 
+	 (_ , Lvar v) -> Lapp e1' [e2']
 
 ---------------------------------------------------------------------------
 -- Représentation du contexte d'exécution                                --

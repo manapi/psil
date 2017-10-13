@@ -1,0 +1,124 @@
+
+(+ 3 2):
+
+----> Scons (Scons (Scons Snil (Ssym "+")) (Snum 3)) (Snum 2)
+
+-------> Lapp (Lvar "+") [Lnum 3,Lnum 2]
+
+(+ (- 3 2) 4):
+
+----> (Scons (Scons (Scons Snil (Ssym "+")) (Scons (Scons (Scons Snil (Ssym "-")) (Snum 3)) (Snum 2))) (Snum 4))
+
+-------> Lapp (Lvar "+") [Lapp (Lvar "-") [Lnum 3,Lnum 2],Lnum 4]
+
+
+((lambda (x) x) 2):
+
+-------> Scons (Scons Snil (Scons (Scons (Scons Snil (Ssym "lambda")) (Scons Snil (Ssym "x"))) (Ssym "x"))) (Snum 2)
+
+----> Lapp (Llambda ["x"] (Lvar "x")) [Lnum 2]
+
+
+(((lambda (x) (lambda (y) (* x y)))3) 5): 
+
+----> (Scons (Scons Snil (Scons (Scons Snil (Scons (Scons (Scons Snil (Ssym "lambda")) (Scons Snil (Ssym "x"))) (Scons (Scons (Scons Snil (Ssym "lambda")) (Scons Snil (Ssym "y"))) (Scons (Scons (Scons Snil (Ssym "*")) (Ssym "x")) (Ssym "y"))))) (Snum 3))) (Snum 5))
+
+-------> Lapp (Llambda ["x"] (Llambda ["y"] (Lapp (Lvar "*") [Lvar "x",Lvar "y"]))) [Lnum 3,Lnum 5]
+
+Lapp (Llambda ["x","y"] (Lapp (Lvar "*") [Lvar "x",Lvar "y"])) [Lnum 3,Lnum 5]
+
+
+(cons nil):
+----> Scons (Scons Snil (Ssym "cons")) (Ssym "nil")
+
+-------> Lcons "nil" []
+
+(cons cons 1 2) :
+----> Scons (Scons (Scons (Scons Snil (Ssym "cons")) (Ssym "cons")) (Snum 1)) (Snum 2)
+-------> Lcons "cons" [Lnum 1,Lnum 2]
+
+
+(case (cons cons 1 2) ((nil) 1)): 
+
+----> Scons (Scons (Scons Snil (Ssym "case")) (Scons (Scons (Scons (Scons Snil (Ssym "cons")) (Ssym "cons")) (Snum 1)) (Snum 2))) (Scons (Scons Snil (Scons Snil (Ssym "nil"))) (Snum 1))
+
+-------> Lcase (Lcons "cons" [Lnum 1,Lnum 2]) [(Just ("nil",[]),Lnum 1)]
+
+
+(case (cons cons 1 2) ((nil) 1) ((cons x y) (+ x y))) : 
+
+----> Scons (Scons (Scons (Scons Snil (Ssym "case")) (Scons (Scons (Scons (Scons Snil (Ssym "cons")) (Ssym "cons")) (Snum 1)) (Snum 2))) (Scons (Scons Snil (Scons Snil (Ssym "nil"))) (Snum 1))) (Scons (Scons Snil (Scons (Scons (Scons Snil (Ssym "cons")) (Ssym "x")) (Ssym "y"))) (Scons (Scons (Scons Snil (Ssym "+")) (Ssym "x")) (Ssym "y")))
+
+-------> Lcase (Lcons "cons" [Lnum 1,Lnum 2]) [(Just ("nil",[]),Lnum 1),(Just ("cons",["x","y"]),Lapp (Lvar "+") [Lvar "x",Lvar "y"])]
+
+
+(if (> 3 4) 5 6):
+
+----> Scons (Scons (Scons (Scons Snil (Ssym "if")) (Scons (Scons (Scons Snil (Ssym ">")) (Snum 3)) (Snum 4))) (Snum 5)) (Snum 6)
+
+-------> Lcase (Lapp (Lvar ">") [Lnum 3,Lnum 4]) [(Just ("true",[]),Lnum 5),(Just ("false",[]),Lnum 6)]
+
+(slet ((x 1)) x):
+
+----> Scons (Scons (Scons Snil (Ssym "slet")) (Scons Snil (Scons (Scons Snil (Ssym "x")) (Snum 1)))) (Ssym "x")
+
+------->
+
+Llet BindingType Var Lexp Lexp
+
+Llet Lexical "x" Lnum "1" Lvar "x"
+
+
+(dlet (((f x y) (* (+ x 1) y))) (f 5 6)):
+
+----> Scons (Scons (Scons Snil (Ssym "dlet")) (Scons Snil (Scons (Scons Snil (Scons (Scons (Scons Snil (Ssym "f")) (Ssym "x")) (Ssym "y"))) (Scons (Scons (Scons Snil (Ssym "*")) (Scons (Scons (Scons Snil (Ssym "+")) (Ssym "x")) (Snum 1))) (Ssym "y"))))) (Scons (Scons (Scons Snil (Ssym "f")) (Snum 5)) (Snum 6))
+
+------->
+
+Llet Dynamic "f" (Lambda ["x","y"] (Lapp (Lvar "*" [Lapp (Lvar "+") [Lvar "x", Lnum 1], Lvar "y"]))) (Lapp (Lvar "f") [Lnum 5, Lnum 6])
+
+
+(slet (((curried+ x) (lambda (y) (+ x y))) (x 7)) ((curried+ 5) 6)):
+
+----> Scons (Scons (Scons Snil (Ssym "slet")) (Scons (Scons Snil (Scons (Scons Snil (Scons (Scons Snil (Ssym "curried+")) (Ssym "x"))) (Scons (Scons (Scons Snil (Ssym "lambda")) (Scons Snil (Ssym "y"))) (Scons (Scons (Scons Snil (Ssym "+")) (Ssym "x")) (Ssym "y"))))) (Scons (Scons Snil (Ssym "x")) (Snum 7)))) (Scons (Scons Snil (Scons (Scons Snil (Ssym "curried+")) (Snum 5))) (Snum 6))
+
+------->
+
+Llet Lexical "curried +" (Lapp (Lambda ["x","y"] (Lapp (Lvar "+") [Lvar "x", Lvar "y"]) [Lnum 7])  (Lapp (Lvar "curried+")  [Lnum 5, Lnum 6])
+
+
+
+(dlet (((curried+ x1) (dlet ((x x1)) (lambda (y) (+ x y)))) (x 7)) ((curried+ 5) 6)):
+
+----> Scons (Scons (Scons Snil (Ssym "dlet")) (Scons (Scons Snil (Scons (Scons Snil (Scons (Scons Snil (Ssym "curried+")) (Ssym "x1"))) (Scons (Scons (Scons Snil (Ssym "dlet")) (Scons Snil (Scons (Scons Snil (Ssym "x")) (Ssym "x1")))) (Scons (Scons (Scons Snil (Ssym "lambda")) (Scons Snil (Ssym "y"))) (Scons (Scons (Scons Snil (Ssym "+")) (Ssym "x")) (Ssym "y")))))) (Scons (Scons Snil (Ssym "x")) (Snum 7)))) (Scons (Scons Snil (Scons (Scons Snil (Ssym "curried+")) (Snum 5))) (Snum 6))
+
+------->
+
+(dlet (((fact n) (if (<= n 1) n (* n (fact (- n 1)))))) (fact 5)) :
+
+----> Scons (Scons (Scons Snil (Ssym "dlet")) (Scons Snil (Scons (Scons Snil (Scons (Scons Snil (Ssym "fact")) (Ssym "n"))) (Scons (Scons (Scons (Scons Snil (Ssym "if")) (Scons (Scons (Scons Snil (Ssym "<=")) (Ssym "n")) (Snum 1))) (Ssym "n")) (Scons (Scons (Scons Snil (Ssym "*")) (Ssym "n")) (Scons (Scons Snil (Ssym "fact")) (Scons (Scons (Scons Snil (Ssym "-")) (Ssym "n")) (Snum 1)))))))) (Scons (Scons Snil (Ssym "fact")) (Snum 5))
+
+------->
+
+(slet (((Y f) (lambda (n) (slet ((f1 (lambda (x n) (f (lambda (n) (x x n)) n)))) (f1 f1 n)))) ((fact fact1 n) (if (<= n 1) n (* n (fact1 (- n 1)))))) ((Y fact) 5)):
+
+Scons (Scons (Scons Snil (Ssym "slet")) (Scons (Scons Snil (Scons (Scons Snil (Scons (Scons Snil (Ssym "Y")) (Ssym "f"))) (Scons (Scons (Scons Snil (Ssym "lambda")) (Scons Snil (Ssym "n"))) (Scons (Scons (Scons Snil (Ssym "slet")) (Scons Snil (Scons (Scons Snil (Ssym "f1")) (Scons (Scons (Scons Snil (Ssym "lambda")) (Scons (Scons Snil (Ssym "x")) (Ssym "n"))) (Scons (Scons (Scons Snil (Ssym "f")) (Scons (Scons (Scons Snil (Ssym "lambda")) (Scons Snil (Ssym "n"))) (Scons (Scons (Scons Snil (Ssym "x")) (Ssym "x")) (Ssym "n")))) (Ssym "n")))))) (Scons (Scons (Scons Snil (Ssym "f1")) (Ssym "f1")) (Ssym "n")))))) (Scons (Scons Snil (Scons (Scons (Scons Snil (Ssym "fact")) (Ssym "fact1")) (Ssym "n"))) (Scons (Scons (Scons (Scons Snil (Ssym "if")) (Scons (Scons (Scons Snil (Ssym "<=")) (Ssym "n")) (Snum 1))) (Ssym "n")) (Scons (Scons (Scons Snil (Ssym "*")) (Ssym "n")) (Scons (Scons Snil (Ssym "fact1")) (Scons (Scons (Scons Snil (Ssym "-")) (Ssym "n")) (Snum 1)))))))) (Scons (Scons Snil (Scons (Scons Snil (Ssym "Y")) (Ssym "fact"))) (Snum 5))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
